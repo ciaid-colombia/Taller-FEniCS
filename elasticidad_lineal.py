@@ -7,25 +7,58 @@ from tqdm import tqdm
 parameters["form_compiler"]["cpp_optimize"] = True
 parameters["form_compiler"]["optimize"] = True
 
+# Dominio
+L = 1; W = 0.1; H =0.04
+# Malla
+mesh = BoxMesh(Point(0., 0., 0.), Point(L, W, H), 60, 10, 5)
+x = SpatialCoordinate(mesh)
+
+# Propiedades del material
+# Constantes de Lame
+E  = 1000.0
+nu = 0.3
+mu    = Constant(E / (2.0*(1.0 + nu)))
+lmbda = Constant(E*nu / ((1.0 + nu)*(1.0 - 2.0*nu)))
+# Densidad
+rho = Constant(1.0)
+# Coeficiente de amortiguacion
+eta = Constant(0.1)
+
+# Subdominio
+# Izquierda
+def left(x, on_boundary):
+    return near(x[0], 0.) and on_boundary
+
+# Derecha
+def right(x, on_boundary):
+    return near(x[0], 1.) and on_boundary
+
+# Espacio de funciones para desplazamiento, velocidad y aceleraciones
+V = VectorFunctionSpace(mesh, "Lagrange", 1)
+# Espacio de funciones para esfuerzos
+Vsig = TensorFunctionSpace(mesh, "DG", 0)
+
+# Funciones
+u = TrialFunction(V)
+v = TestFunction(V)
+
+
+# Formas variacionales
 # Tensor de esfuerzos
-def sigma(r):
-    return 2.0*mu*sym(grad(r)) + lmbda*tr(sym(grad(r)))*Identity(len(r))
+def sigma(u):
+    return 2.0*mu*sym(grad(u)) + lmbda*tr(sym(grad(u)))*Identity(len(u))
 
 # Matriz de masa
-def mmat(u, u_):
-    return rho*inner(u, u_)*dx
+def mmat(u, v):
+    return rho*inner(u, v)*dx
 
 # Matriz de rigidez elastica
-def kmat(u, u_):
-    return inner(sigma(u), sym(grad(u_)))*dx
+def kmat(u, v):
+    return inner(sigma(u), sym(grad(v)))*dx
 
 # Amortiguacion de Rayleigh
-def cmat(u, u_):
-    return eta*mmat(u, u_)
-
-# Fuerzas externas
-def fvec(s,u_,dss):
-    return rho*dot(u_, s)*dss(3)
+def cmat(u, v):
+    return eta*mmat(u, v)
 
 # Proyeccion local
 def local_project(v, V, u=None):
@@ -42,6 +75,34 @@ def local_project(v, V, u=None):
     else:
         solver.solve_local_rhs(u)
         return
+
+# Condicion de contorno izquierda (Dirichlet)
+zero = Constant((0.0, 0.0, 0.0))
+bc = DirichletBC(V, zero, left)
+
+# Condicion de contorno derecha
+boundary_subdomains = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
+boundary_subdomains.set_all(0)
+force_boundary = AutoSubDomain(right)
+force_boundary.mark(boundary_subdomains, 3)
+dss = ds(subdomain_data=boundary_subdomains)
+
+# Cargas
+k = 0.25
+s0 = 1.
+s = Expression(("0", "s0*sin(k*pi*t)","0"), t=0, k=k, s0=s0, degree=0)
+g = Constant((0.,-1,0.))
+
+# Integrador temporal
+T  = 25.0
+dt = 0.25
+Nt = int(T/dt)
+ti = np.linspace(0, T, Nt)
+
+# Campos para el paso de tiempo anterior
+u_old = Function(V, name="Desplazamiento")
+v_old = Function(V, name="Velocidad")
+a_old = Function(V, name="Aceleracion")
 
 # Metodo de Newmark (punto medio)
 gamma   = Constant(0.5)
@@ -86,94 +147,20 @@ def update_fields(u, u_old, v_old, a_old):
     u_old.vector()[:] = u.vector()
 
 
-# Dominio
-L = 1; W = 0.1; H =0.04
-# Malla
-mesh = BoxMesh(Point(0., 0., 0.), Point(L, W, H), 60, 10, 5)
-x = SpatialCoordinate(mesh)
-
-# Subdominio
-# Izquierda
-def left(x, on_boundary):
-    return near(x[0], 0.) and on_boundary
-
-# Derecha
-def right(x, on_boundary):
-    return near(x[0], 1.) and on_boundary
-
-# Cargas
-k = 0.25
-p0 = 1.
-p = Expression(("0", "p0*sin(k*pi*t)","0"), t=0, k=k, p0=p0, degree=0)
-g = Constant((0.,-1,0.))
-
-# Propiedades del material
-# Constantes de Lame
-E  = 1000.0
-nu = 0.3
-mu    = Constant(E / (2.0*(1.0 + nu)))
-lmbda = Constant(E*nu / ((1.0 + nu)*(1.0 - 2.0*nu)))
-# Densidad
-rho = Constant(1.0)
-# Coeficiente de amortiguacion
-eta = Constant(0.1)
-
-# Tiempo
-T  = 15.0
-dt = 0.2
-Nt = int(T/dt)
-
-
-# Espacio de funciones para desplazamiento, velocidad y aceleraciones
-V = VectorFunctionSpace(mesh, "Lagrange", 1)
-# Espacio de funciones para esfuerzos
-Vsig = TensorFunctionSpace(mesh, "DG", 0)
-
-# Funciones
-du = TrialFunction(V)
-u_ = TestFunction(V)
-
-# Desplazamiento
-u = Function(V, name="Desplazamiento")
-dim = u.geometric_dimension()  # dimension del espacio
-# Campos para el paso de tiempo anterior
-u_old = Function(V, name="Desplazamiento")
-v_old = Function(V, name="Velocidad")
-a_old = Function(V, name="Aceleracion")
-
-# Condicion de contorno derecha
-boundary_subdomains = MeshFunction("size_t", mesh, mesh.topology().dim() - 1)
-boundary_subdomains.set_all(0)
-force_boundary = AutoSubDomain(right)
-force_boundary.mark(boundary_subdomains, 3)
-dss = ds(subdomain_data=boundary_subdomains)
-
-# Condicion de contorno izquierda (Dirichlet)
-zero = Constant((0.0, 0.0, 0.0))
-bc = DirichletBC(V, zero, left)
-
-
 # Ecuacion de elasticidad en forma residual
-a_new = update_a(du, u_old, v_old, a_old, ufl=True)
+a_new = update_a(u, u_old, v_old, a_old, ufl=True)
 v_new = update_v(a_new, u_old, v_old, a_old, ufl=True)
-res = mmat(a_new, u_) + cmat(v_new, u_) \
-       + kmat(du, u_) - fvec(p,u_,dss) - fvec(rho*g,u_,dss)
+res = mmat(a_new, v) + cmat(v_new, v) \
+       + kmat(u, v) - rho*dot(s,v)*dss(3) - dot(rho*g,v)*dx
 # Ensamble del sistema de ecuaciones
-a_form = lhs(res)
+B_form = lhs(res)
 L_form = rhs(res)
-K, res = assemble_system(a_form, L_form, bc)
-
-# Propiedades del solver
-solver = LUSolver(K, "mumps")
-solver.parameters["symmetric"] = True
+K, b = assemble_system(B_form, L_form, bc)
 
 # Inicializacion de variables de salida
-ti = np.linspace(0, T, Nt)
 u_tip = np.zeros((Nt,))
 energies = np.zeros((Nt, 4))
 E_damp = 0
-E_ext = 0
-sig = Function(Vsig, name="sigma")
 
 # Creacion de archivos de salida (ParaView)
 xdmf_file = XDMFFile("bar.xdmf")
@@ -181,18 +168,26 @@ xdmf_file.parameters["flush_output"] = True
 xdmf_file.parameters["functions_share_mesh"] = True
 xdmf_file.parameters["rewrite_function_mesh"] = False
 
+# Solucion
+u = Function(V, name="Desplazamiento")
+sig = Function(Vsig, name="sigma")
+
+# Propiedades del solver
+solver = LUSolver(K, "mumps")
+solver.parameters["symmetric"] = True
+
 # Bucle temporal
 for i in tqdm(range(Nt),desc='Time loop'):
 
     t = ti[i]
 
     # Fuerza evaluada en t_{n+1}=t_{n+1}-dt
-    p.t = t
+    s.t = t
 
     # Solucionar desplazamientos
-    res = assemble(L_form)
-    bc.apply(res)
-    solver.solve(K, u.vector(), res)
+    b = assemble(L_form)
+    bc.apply(b)
+    solver.solve(K, u.vector(), b)
 
     # Actualizar campos
     update_fields(u, u_old, v_old, a_old)
@@ -207,11 +202,11 @@ for i in tqdm(range(Nt),desc='Time loop'):
     xdmf_file.write(sig, t)
 
     # Guardar solucion (desplazamiento y energia)
-    u_tip[i] = u(1., 0.05, 0.02)[2]
+    u_tip[i] = u(1., 0.05, 0.02)[1]
     E_elas = assemble(0.5*kmat(u_old, u_old))
     E_kin = assemble(0.5*mmat(v_old, v_old))
     E_damp += dt*assemble(cmat(v_old, v_old))
-    E_tot = E_elas+E_kin+E_damp #-E_ext
+    E_tot = E_elas+E_kin+E_damp
     energies[i, :] = np.array([E_elas, E_kin, E_damp, E_tot])
 
 # Imprimir desplazamiento en x=(1,0.05,0.02)
@@ -219,7 +214,7 @@ plt.figure()
 plt.plot(ti, u_tip)
 plt.xlabel("Time")
 plt.ylabel("Desplazamiento")
-plt.savefig('tip.png',format='png',dpi=400)
+plt.savefig('images/tip.png',format='png',dpi=400)
 plt.show()
 
 # Imprimir energia
@@ -227,6 +222,6 @@ plt.figure()
 plt.plot(ti, energies)
 plt.legend(("elastica", "cinetica", "amortiguacion", "total"))
 plt.xlabel("Time")
-plt.ylabel("Energias")
-plt.savefig('energy.png',format='png',dpi=400)
+plt.ylabel("Energia")
+plt.savefig('images/energy.png',format='png',dpi=400)
 plt.show()

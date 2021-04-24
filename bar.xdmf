@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
+<Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <Domain>
+    <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">
+      <Grid Name="mesh" GridType="Uniform">
+        <Topology NumberOfElements="18000" TopologyType="Tetrahedron" NodesPerElement="4">
+          <DataItem Dimensions="18000 4" NumberType="UInt" Format="HDF">bar.h5:/Mesh/0/mesh/topology</DataItem>
+        </Topology>
+        <Geometry GeometryType="XYZ">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/Mesh/0/mesh/geometry</DataItem>
+        </Geometry>
+        <Time Value="0" />
+        <Attribute Name="Desplazamiento" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/0</DataItem>
+        </Attribute>
+        <Attribute Name="Velocidad" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/1</DataItem>
+        </Attribute>
+        <Attribute Name="Aceleracion" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/2</DataItem>
+        </Attribute>
+        <Attribute Name="sigma" AttributeType="Tensor" Center="Cell">
+          <DataItem Dimensions="18000 9" Format="HDF">bar.h5:/VisualisationVector/3</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="0.33333333333333331" />
+        <Attribute Name="Desplazamiento" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/4</DataItem>
+        </Attribute>
+        <Attribute Name="Velocidad" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/5</DataItem>
+        </Attribute>
+        <Attribute Name="Aceleracion" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/6</DataItem>
+        </Attribute>
+        <Attribute Name="sigma" AttributeType="Tensor" Center="Cell">
+          <DataItem Dimensions="18000 9" Format="HDF">bar.h5:/VisualisationVector/7</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="0.66666666666666663" />
+        <Attribute Name="Desplazamiento" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/8</DataItem>
+        </Attribute>
+        <Attribute Name="Velocidad" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/9</DataItem>
+        </Attribute>
+        <Attribute Name="Aceleracion" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/10</DataItem>
+        </Attribute>
+        <Attribute Name="sigma" AttributeType="Tensor" Center="Cell">
+          <DataItem Dimensions="18000 9" Format="HDF">bar.h5:/VisualisationVector/11</DataItem>
+        </Attribute>
+      </Grid>
+      <Grid>
+        <xi:include xpointer="xpointer(//Grid[@Name=&quot;TimeSeries&quot;]/Grid[1]/*[self::Topology or self::Geometry])" />
+        <Time Value="1" />
+        <Attribute Name="Desplazamiento" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/12</DataItem>
+        </Attribute>
+        <Attribute Name="Velocidad" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/13</DataItem>
+        </Attribute>
+        <Attribute Name="Aceleracion" AttributeType="Vector" Center="Node">
+          <DataItem Dimensions="4026 3" Format="HDF">bar.h5:/VisualisationVector/14</DataItem>
+        </Attribute>
+        <Attribute Name="sigma" AttributeType="Tensor" Center="Cell">
+          <DataItem Dimensions="18000 9" Format="HDF">bar.h5:/VisualisationVector/15</DataItem>
+        </Attribute>
+      </Grid>
+    </Grid>
+  </Domain>
+</Xdmf>
