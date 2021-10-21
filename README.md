@@ -1,7 +1,10 @@
 # Taller-FEniCS
 
-Repositorio para el taller de FEniCS del Seminario internacional en métodos numéricos y herramientas computacionales - 2021 - Herramientas computacionales y métodos numéricos para problemas de ingenieria.
-En este repositorio incluimos 2 notebooks: ecuación de Poisson y elasticidad lineal.
+Repositorio para el taller de FEniCS del <b>Seminario internacional en métodos numéricos y herramientas computacionales - 2021 - Herramientas computacionales y métodos numéricos para problemas de ingenieria</b>.
+
+
+- Notebook de la ecuación de Poisson 
+- Notebook del problema de elasticidad lineal.
 
 
 
